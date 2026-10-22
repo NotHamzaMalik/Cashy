@@ -5,7 +5,7 @@ const navigate = async (page: Page, name: string) => { await page.getByRole('nav
 test('desktop dashboard, expense entry, search and persistence', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Your money, at a glance.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/cashy-desktop.png', fullPage: true });
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
   await page.getByLabel('Merchant or description').fill('QA groceries');
