@@ -1,0 +1,5 @@
+{
+  "name": "Cashy", "short_name": "Cashy", "description": "Your personal and family finance companion",
+  "start_url": "/", "display": "standalone", "background_color": "#211a18", "theme_color": "#211a18",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
