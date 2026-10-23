@@ -10,7 +10,10 @@
     "test": "tsx --test tests/*.test.ts",
     "predev": "node scripts/copy-pdf-worker.mjs",
     "prebuild": "node scripts/copy-pdf-worker.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:setup": "node --env-file=.env.local scripts/setup-database.mjs",
+    "test:database": "node --env-file=.env.local --import tsx --test tests/database.integration.ts",
+    "test:sync:e2e": "node --env-file=.env.local scripts/test-authenticated-sync.mjs --browser"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
@@ -24,8 +27,9 @@
     "@clerk/nextjs": "^7.9.14",
     "@supabase/supabase-js": "^2.117.3",
     "lucide-react": "^1.56.0",
-    "next": "^16.4.0",
+    "next": "^16.4.3",
     "pdfjs-dist": "^6.4.299",
+    "postgres": "^3.4.9",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.7"
