@@ -12,3 +12,5 @@ body{letter-spacing:-.1px}h1{font-size:30px;font-weight:650;letter-spacing:-.8px
 /* Responsive panels must stretch after changing from grid to flex. */
 @media(max-width:760px){.dashboard-grid>.stack:last-child,.family-grid>.stack{align-items:stretch}}
 @media(hover:hover){.button,.nav-item,.account-card{transition:background-color .16s ease,border-color .16s ease,transform .16s ease}.button:active,.account-card:active{transform:translateY(1px)}.transaction-row:hover{background:var(--surface2)}}
+
+.auth-welcome{max-width:600px;margin:15vh auto;padding:32px}.auth-welcome p{margin:20px 0;color:var(--muted)}

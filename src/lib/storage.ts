@@ -27,3 +27,11 @@ export function parseStore(raw: unknown): Store {
   return data;
 }
 export const STORAGE_KEY = 'cashy-demo-v1';
+
+export function emptyStore(): Store {
+  return { version: 1, accounts: [], transactions: [], budgets: [], goals: [], holdings: [], subscriptions: [] };
+}
+export function workspaceKey(userId: string): string {
+  if (!userId.trim()) throw new Error('A signed-in user is required.');
+  return 'cashy-workspace-v1:' + userId;
+}
