@@ -4,7 +4,7 @@ import { emptyStore, parseStore } from './storage';
 export type CloudCopy = { revision: number; store: Store };
 export type LocalCopy = { version: 1; userId: string; base: Store; revision: number; local: Store; conflict?: CloudCopy };
 export type SyncStatus = 'loading' | 'saved' | 'pending' | 'syncing' | 'offline' | 'conflict' | 'error' | 'auth';
-export const collections = ['accounts', 'transactions', 'budgets', 'goals', 'holdings', 'subscriptions'] as const;
+export const collections = ['accounts', 'transactions', 'budgets', 'goals', 'holdings', 'subscriptions', 'familyMembers', 'remittances', 'allowances', 'loans'] as const;
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
   if (value && typeof value === 'object') return '{' + Object.entries(value).filter(([, v]) => v !== undefined).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => JSON.stringify(k) + ':' + canonical(v)).join(',') + '}';

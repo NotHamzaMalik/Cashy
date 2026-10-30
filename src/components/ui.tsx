@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Coffee, ShoppingBasket, CarFront, ShoppingBag, Zap, HeartPulse, GraduationCap, Music2, BriefcaseBusiness, Laptop, Ellipsis, type LucideIcon } from 'lucide-react';
+import { X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Utensils, ShoppingBasket, CarFront, House, Zap, HeartPulse, GraduationCap, HandCoins, BriefcaseBusiness, Ellipsis, type LucideIcon } from 'lucide-react';
 import { type Transaction, money } from '@/lib/finance';
-export const categoryIcons: Record<string, LucideIcon> = { 'Food & drinks': Coffee, Groceries: ShoppingBasket, Transport: CarFront, Shopping: ShoppingBag, 'Bills & utilities': Zap, Health: HeartPulse, Education: GraduationCap, Entertainment: Music2, Salary: BriefcaseBusiness, Freelance: Laptop, Other: Ellipsis };
-export const categoryColors: Record<string, string> = { 'Food & drinks': 'peach', Groceries: 'green', Transport: 'lavender', Shopping: 'pink', 'Bills & utilities': 'yellow', Health: 'pink', Education: 'lavender', Entertainment: 'green', Salary: 'green', Freelance: 'lavender', Other: 'peach' };
+export const categoryIcons: Record<string, LucideIcon> = { Groceries: ShoppingBasket, 'Bills & utilities': Zap, 'Fuel & transport': CarFront, 'Pocket money': HandCoins, Education: GraduationCap, Medical: HeartPulse, 'Rent & home': House, 'Family support': HandCoins, Dining: Utensils, Salary: BriefcaseBusiness, Other: Ellipsis };
+export const categoryColors: Record<string, string> = { Groceries: 'green', 'Bills & utilities': 'yellow', 'Fuel & transport': 'lavender', 'Pocket money': 'peach', Education: 'lavender', Medical: 'pink', 'Rent & home': 'green', 'Family support': 'peach', Dining: 'yellow', Salary: 'green', Other: 'peach' };
 export function CategoryIcon({ category }: { category: string }) { const Icon = categoryIcons[category] || Ellipsis; return <span className={`category-icon ${categoryColors[category] || 'peach'}`}><Icon size={20} strokeWidth={1.7} /></span>; }
 export function Modal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);

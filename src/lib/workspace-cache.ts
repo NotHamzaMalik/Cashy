@@ -11,7 +11,7 @@ function database(): Promise<IDBDatabase> {
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => { opening = undefined; reject(request.error); };
-    request.onblocked = () => { opening = undefined; reject(new Error('Close other Cashy tabs to open device storage.')); };
+    request.onblocked = () => { opening = undefined; reject(new Error('Close other Kash tabs to open device storage.')); };
   });
 }
 function validate(copy: LocalCopy, userId: string): LocalCopy {

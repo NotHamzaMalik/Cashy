@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   poweredByHeader: false,
-  outputFileTracingIncludes: { '/api/workspace': ['./certs/supabase-ca.crt'] },
+  outputFileTracingIncludes: { '/api/workspace': ['./certs/supabase-ca.crt'], '/api/family': ['./certs/supabase-ca.crt'] },
   async headers() {
     return [{ source: '/(.*)', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },

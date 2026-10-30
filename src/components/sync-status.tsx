@@ -18,7 +18,7 @@ export function SyncStatusPanel({ view, retry, resolve }: { view: SyncView; retr
       {['pending', 'error', 'auth'].includes(view.status) && <button className="text-button" onClick={retry}>Retry sync</button>}</div>
     {view.message && <p>{view.message}</p>}
     {view.copy.conflict && <><p>Two devices changed the same records, or related records no longer match. Choose the complete version to keep. Both copies are saved as recovery backups before applying your choice.</p>
-      <div className="button-row"><button className="button secondary small" onClick={() => download(JSON.stringify(view.copy, null, 2), 'cashy-conflict-backup.json', 'application/json')}><Download size={14} /> Export both copies</button>
+      <div className="button-row"><button className="button secondary small" onClick={() => download(JSON.stringify(view.copy, null, 2), 'kash-conflict-backup.json', 'application/json')}><Download size={14} /> Export both copies</button>
       <button className="button secondary small" disabled={busy} onClick={() => { void choose('local'); }}>Keep this device’s version</button>
       <button className="button secondary small" disabled={busy} onClick={() => { void choose('cloud'); }}>Keep cloud version</button></div>
       {error && <p role="alert">{error}</p>}</>}

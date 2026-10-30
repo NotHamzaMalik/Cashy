@@ -1,8 +1,9 @@
 import { type Store, type Transaction } from './finance';
+import { emptyStore } from './storage';
 const tx = (id: string, merchant: string, amount: number, date: string, category: string, accountId = 'bank', type: Transaction['type'] = 'expense', currency: 'PKR' | 'USD' = 'PKR'): Transaction => ({ id, merchant, amount: amount * 100, date: `2026-10-${date}`, category, accountId, type, currency, owner: 'me', note: '' });
 export function initialStore(): Store {
   return {
-    version: 1,
+    ...emptyStore(),
     accounts: [
       { id: 'bank', owner: 'me', name: 'Everyday account', kind: 'Bank account', currency: 'PKR', opening: 14250000, color: 'peach' },
       { id: 'cash', owner: 'me', name: 'Cash wallet', kind: 'Cash', currency: 'PKR', opening: 1800000, color: 'green' },

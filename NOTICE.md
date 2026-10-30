@@ -1,6 +1,6 @@
 # Attribution
 
-Cashy references and adapts the interface direction of [Cashiro](https://github.com/ritesh-kanwar/Cashiro), by Ritesh Kanwar and contributors, licensed under GNU Affero General Public License v3.0. Reference revision: `40a387fd0bb87bdc51c80124e0fbf084e8a2b2ce`.
+Kash references and adapts the interface direction of [Cashiro](https://github.com/ritesh-kanwar/Cashiro), by Ritesh Kanwar and contributors, licensed under GNU Affero General Public License v3.0. Reference revision: `40a387fd0bb87bdc51c80124e0fbf084e8a2b2ce`.
 
 The web implementation in this directory is provided under AGPL-3.0; see LICENSE. Keep this notice with distributions and provide corresponding source where the license requires it. This notice does not assert rights over third-party names or marks.
 

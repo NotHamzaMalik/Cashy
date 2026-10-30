@@ -4,7 +4,7 @@ import { emptyStore, workspaceKey, parseStore, STORAGE_KEY } from '../src/lib/st
 
 test('new workspaces contain no seeded money or family records', () => {
   const first = emptyStore();
-  assert.deepEqual(parseStore(first), { version: 1, accounts: [], transactions: [], budgets: [], goals: [], holdings: [], subscriptions: [] });
+  assert.deepEqual(parseStore(first), emptyStore());
   first.accounts.push({ id: 'a', owner: 'me', name: 'Wallet', kind: 'Cash', currency: 'PKR', opening: 0, color: 'green' });
   assert.equal(emptyStore().accounts.length, 0);
 });

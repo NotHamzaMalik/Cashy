@@ -1,25 +1,48 @@
-export type Currency = 'PKR' | 'USD';
+export type Currency = 'PKR' | 'ZAR' | 'USD' | 'USDT';
 export type Period = 'day' | 'month' | 'year';
 export type TransactionType = 'expense' | 'income' | 'transfer';
 export type Transaction = {
   id: string; owner: string; merchant: string; amount: number; currency: Currency;
   date: string; type: TransactionType; category: string; accountId: string;
-  toAccountId?: string; note: string; reportStatus?: 'draft' | 'submitted' | 'approved' | 'changes';
+  toAccountId?: string; note: string; memberId?: string;
+  location?: 'south-africa' | 'pakistan' | 'other';
+  reportStatus?: 'draft' | 'submitted' | 'approved' | 'changes';
 };
 export type Account = { id: string; owner: string; name: string; kind: string; currency: Currency; opening: number; color: string };
 export type Budget = { id: string; category: string; limit: number; currency: Currency };
 export type Goal = { id: string; name: string; target: number; saved: number; currency: Currency; deadline: string; icon: string };
 export type Holding = { id: string; name: string; kind: string; cost: number; value: number; currency: Currency; asOf: string };
 export type Subscription = { id: string; name: string; amount: number; currency: Currency; due: string; cadence: 'monthly' | 'yearly'; accountId: string };
-export type Store = { version: 1; accounts: Account[]; transactions: Transaction[]; budgets: Budget[]; goals: Goal[]; holdings: Holding[]; subscriptions: Subscription[] };
+export type FamilyMember = { id: string; name: string; relationship: string; color: string };
+export type Remittance = {
+  id: string; sender: string; recipient: string; sentAmount: number; sentCurrency: Currency;
+  receivedAmount: number; receivedCurrency: Currency; fee: number; date: string;
+  status: 'sent' | 'received'; note: string;
+};
+export type Allowance = {
+  id: string; memberId: string; amount: number; currency: Currency; month: string;
+  status: 'planned' | 'paid'; note: string;
+};
+export type Loan = {
+  id: string; borrower: string; principal: number; repaid: number; currency: Currency;
+  date: string; due: string; note: string;
+};
+export type Store = {
+  version: 1; accounts: Account[]; transactions: Transaction[]; budgets: Budget[];
+  goals: Goal[]; holdings: Holding[]; subscriptions: Subscription[];
+  familyMembers: FamilyMember[]; remittances: Remittance[]; allowances: Allowance[]; loans: Loan[];
+};
 
-export const CATEGORIES = ['Food & drinks', 'Groceries', 'Transport', 'Shopping', 'Bills & utilities', 'Health', 'Education', 'Entertainment', 'Salary', 'Freelance', 'Other'];
+export const CURRENCIES: Currency[] = ['PKR', 'ZAR', 'USD', 'USDT'];
+export const CURRENCY_LABELS: Record<Currency, string> = {
+  PKR: 'Pakistani rupee', ZAR: 'South African rand', USD: 'US dollar', USDT: 'Tether'
+};
+export const CATEGORIES = ['Groceries', 'Bills & utilities', 'Fuel & transport', 'Pocket money', 'Education', 'Medical', 'Rent & home', 'Family support', 'Dining', 'Salary', 'Other'];
 export const DEMO_DATE = '2026-10-13';
 
 export function parseMoney(value: string): number {
   if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(value.trim())) throw new Error('Enter a valid amount, such as 1,250.00.');
   const normalized = value.trim().replace(/,/g, '');
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) throw new Error('Enter a positive amount with up to 2 decimal places.');
   const [whole, fraction = ''] = normalized.split('.');
   const minor = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
   if (!Number.isSafeInteger(minor) || minor <= 0 || minor > 1_000_000_000_000) throw new Error('Amount must be between 0.01 and 10 billion.');
@@ -27,7 +50,8 @@ export function parseMoney(value: string): number {
 }
 export function money(minor: number, currency: Currency = 'PKR', compact = false): string {
   const value = minor / 100;
-  return `${currency === 'PKR' ? 'Rs' : '$'} ${new Intl.NumberFormat('en-US', {
+  const prefix: Record<Currency, string> = { PKR: 'Rs', ZAR: 'R', USD: '$', USDT: 'USDT' };
+  return `${prefix[currency]} ${new Intl.NumberFormat('en-US', {
     maximumFractionDigits: compact ? 1 : (minor % 100 ? 2 : 0),
     notation: compact && Math.abs(value) >= 10000 ? 'compact' : 'standard'
   }).format(value)}`;
@@ -36,7 +60,8 @@ export function validDate(date: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date)) && new Date(date + 'T12:00:00Z').toISOString().slice(0, 10) === date;
 }
 export function inPeriod(date: string, period: Period, anchor: string): boolean {
-  return date.slice(0, period === 'day' ? 10 : period === 'month' ? 7 : 4) === anchor.slice(0, period === 'day' ? 10 : period === 'month' ? 7 : 4);
+  const width = period === 'day' ? 10 : period === 'month' ? 7 : 4;
+  return date.slice(0, width) === anchor.slice(0, width);
 }
 export function visibleTransactions(transactions: Transaction[], scope: 'personal' | 'family', member = 'me'): Transaction[] {
   const seen = new Set<string>();
@@ -61,15 +86,15 @@ export function balance(account: Account, transactions: Transaction[]): number {
   }, account.opening);
 }
 export function validateTransaction(t: Transaction, accounts: Account[]) {
-  if (!t.merchant.trim()) throw new Error('Add a merchant or description.');
+  if (!t.merchant.trim()) throw new Error('Add a description.');
   if (!Number.isSafeInteger(t.amount) || t.amount <= 0 || t.amount > 1_000_000_000_000) throw new Error('Invalid amount.');
   if (!validDate(t.date)) throw new Error('Choose a valid date.');
-  const account = accounts.find(a => a.id === t.accountId && a.owner === t.owner);
-  if (!account || account.currency !== t.currency) throw new Error('Choose an account matching the transaction currency and owner.');
+  const account = accounts.find(a => a.id === t.accountId && a.owner === t.owner && a.currency === t.currency);
+  if (!account) throw new Error('Choose an account matching the currency.');
   if (t.type === 'transfer') {
     const destination = accounts.find(a => a.id === t.toAccountId && a.owner === t.owner);
     if (!destination || destination.id === account.id) throw new Error('Choose a different destination account.');
-    if (destination.currency !== account.currency) throw new Error('Demo transfers require the same currency. Cross-currency transfers need a confirmed rate.');
+    if (destination.currency !== account.currency) throw new Error('Account transfers require the same currency. Use Money sent for cross-currency transfers.');
   }
 }
 export function fingerprint(t: Pick<Transaction, 'accountId' | 'date' | 'amount' | 'currency' | 'merchant' | 'type'>): string {
@@ -77,8 +102,8 @@ export function fingerprint(t: Pick<Transaction, 'accountId' | 'date' | 'amount'
 }
 export function csvExport(transactions: Transaction[]): string {
   const cell = (v: string) => `"${(/^[\s]*[=+\-@\t\r]/.test(v) ? "'" : '') + v.replace(/"/g, '""')}"`;
-  return '\uFEFF' + ['Date,Description,Type,Category,Amount,Currency,Account,Note', ...transactions.map(t =>
-    [t.date, t.merchant, t.type, t.category, (t.amount / 100).toFixed(2), t.currency, t.accountId, t.note].map(cell).join(',')
+  return '\uFEFF' + ['Date,Description,Type,Category,Amount,Currency,Account,Member,Location,Note', ...transactions.map(t =>
+    [t.date, t.merchant, t.type, t.category, (t.amount / 100).toFixed(2), t.currency, t.accountId, t.memberId || '', t.location || '', t.note].map(cell).join(',')
   )].join('\r\n');
 }
 export function nextDue(date: string, cadence: 'monthly' | 'yearly'): string {

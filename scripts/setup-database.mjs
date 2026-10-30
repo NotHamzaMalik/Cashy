@@ -9,6 +9,7 @@ const sql = postgres(process.env.CASHY_MIGRATION_DATABASE_URL, {
 });
 try {
   await sql.unsafe(await readFile('supabase/migrations/202610230001_workspaces.sql', 'utf8'));
+  await sql.unsafe(await readFile('supabase/migrations/202610300001_households.sql', 'utf8'));
   if (!process.env.DATABASE_URL) {
     const password = randomBytes(32).toString('hex');
     // Generated hex is safe in this DDL literal. No supplied text is interpolated.
@@ -19,8 +20,8 @@ try {
     await appendFile('.env.local', '\nDATABASE_URL=' + url.toString() + '\n');
     console.log('Restricted app connection saved to ignored .env.local. No credentials printed.');
   }
-  console.log('Supabase workspace schema and ownership policy installed.');
+  console.log('Supabase workspace, household sharing and ownership policies installed.');
 } catch (error) {
-  console.error('Database setup failed:', error.code || error.name);
+  console.error('Database setup failed:', error.code || error.name, String(error.message || '').replace(/postgresql:\/\/[^\s]+/gi, '[connection hidden]'));
   process.exitCode = 1;
 } finally { await sql.end({ timeout: 2 }); }

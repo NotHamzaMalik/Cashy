@@ -13,16 +13,52 @@ function database() {
   });
 }
 export type CloudWorkspace = { revision: number; store: Store };
+export type FamilyRole = 'dad' | 'manager';
+export type FamilyStatus = { id: string; name: string; inviteCode: string; role: FamilyRole; displayName: string; members: { displayName: string; role: FamilyRole }[] };
+
+async function identify(sql: postgres.TransactionSql, userId: string) {
+  await sql`select set_config('cashy.user_id', ${userId}, true)`;
+}
+export async function getFamilyStatus(userId: string): Promise<FamilyStatus | null> {
+  return database().begin(async sql => {
+    await identify(sql, userId);
+    const rows = await sql`select cashy.family_status() as status`;
+    return rows[0]?.status ?? null;
+  }) as Promise<FamilyStatus | null>;
+}
+export async function createFamily(userId: string, name: string, role: FamilyRole, displayName: string): Promise<FamilyStatus> {
+  return database().begin(async sql => {
+    await identify(sql, userId);
+    const personal = await sql`select data from cashy.workspaces where user_id = ${userId}`;
+    const initial = personal.length ? parseStore(personal[0].data) : emptyStore();
+    const rows = await sql`select cashy.create_family(${name}, ${role}, ${displayName}, ${sql.json(initial)}) as status`;
+    return rows[0].status;
+  }) as Promise<FamilyStatus>;
+}
+export async function joinFamily(userId: string, code: string, role: FamilyRole, displayName: string): Promise<FamilyStatus> {
+  return database().begin(async sql => {
+    await identify(sql, userId);
+    const rows = await sql`select cashy.join_family(${code}, ${role}, ${displayName}) as status`;
+    return rows[0].status;
+  }) as Promise<FamilyStatus>;
+}
 export async function readWorkspace(userId: string): Promise<CloudWorkspace> {
   return database().begin(async sql => {
-    await sql`select set_config('cashy.user_id', ${userId}, true)`;
-    const rows = await sql`select revision, data from cashy.workspaces where user_id = ${userId}`;
-    return rows.length ? { revision: rows[0].revision, store: parseStore(rows[0].data) } : { revision: 0, store: emptyStore() };
+    await identify(sql, userId);
+    const family = await sql`select * from cashy.read_family_workspace()`;
+    if (family.length) return { revision: family[0].revision, store: parseStore(family[0].data) };
+    const personal = await sql`select revision, data from cashy.workspaces where user_id = ${userId}`;
+    return personal.length ? { revision: personal[0].revision, store: parseStore(personal[0].data) } : { revision: 0, store: emptyStore() };
   }) as Promise<CloudWorkspace>;
 }
 export async function writeWorkspace(userId: string, expectedRevision: number, store: Store): Promise<number | null> {
   return database().begin(async sql => {
-    await sql`select set_config('cashy.user_id', ${userId}, true)`;
+    await identify(sql, userId);
+    const status = await sql`select cashy.family_status() as status`;
+    if (status[0]?.status) {
+      const rows = await sql`select cashy.write_family_workspace(${expectedRevision}, ${sql.json(store)}) as revision`;
+      return rows[0]?.revision ?? null;
+    }
     const rows = expectedRevision === 0
       ? await sql`insert into cashy.workspaces (user_id, revision, data) values (${userId}, 1, ${sql.json(store)}) on conflict (user_id) do nothing returning revision`
       : await sql`update cashy.workspaces set data = ${sql.json(store)}, revision = revision + 1, updated_at = now() where user_id = ${userId} and revision = ${expectedRevision} returning revision`;

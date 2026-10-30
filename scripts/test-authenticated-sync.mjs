@@ -18,7 +18,7 @@ function api(endpoint, options = '') {
   if (data.error || result.error) throw Error('Clerk CLI response: ' + JSON.stringify(data.error || result.error));
   return data;
 }
-const empty = { version: 1, accounts: [], transactions: [], budgets: [], goals: [], holdings: [], subscriptions: [] };
+const empty = { version: 1, accounts: [], transactions: [], budgets: [], goals: [], holdings: [], subscriptions: [], familyMembers: [], remittances: [], allowances: [], loans: [] };
 const origin = process.env.CASHY_TEST_ORIGIN || 'http://localhost:3100';
 async function request(token, method = 'GET', body, extra = {}) {
   return fetch(origin + '/api/workspace', { method, redirect: 'manual', signal: AbortSignal.timeout(20000),
