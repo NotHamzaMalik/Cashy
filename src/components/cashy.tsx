@@ -16,13 +16,13 @@ type Role = 'dad' | 'manager';
 type Family = { id: string; name: string; inviteCode: string; role: Role; displayName: string; members: { displayName: string; role: Role }[] };
 const NAV: { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'home', label: 'Home', icon: Home }, { id: 'dad', label: 'Income & transfers', icon: Landmark },
-  { id: 'household', label: 'Household', icon: House }, { id: 'allowances', label: 'Pocket money', icon: HandCoins },
+  { id: 'household', label: 'Household', icon: House }, { id: 'allowances', label: 'Allowances', icon: HandCoins },
   { id: 'loans', label: 'Loans', icon: BadgeDollarSign }, { id: 'savings', label: 'Savings', icon: PiggyBank },
   { id: 'reports', label: 'Reports', icon: ChartNoAxesCombined }, { id: 'records', label: 'Records & PDFs', icon: FileText }
 ];
 const SUBTITLES: Record<string, string> = {
   home: 'Your complete money picture, without the clutter.', dad: 'Income, overseas spending and international transfers.',
-  household: 'Bills, groceries, fuel and the money still available.', allowances: 'Clear monthly pocket money for every sibling.',
+  household: 'Bills, groceries, fuel and the money still available.', allowances: 'Plan and track regular amounts for each person.',
   loans: 'Who owes you, when it is due and what remains.', savings: 'Savings and progress toward important goals.',
   reports: 'A simple monthly summary to review together.', records: 'Every money record, detailed notes and PDF statement import.',
   settings: 'Shared access, appearance and your data.'
