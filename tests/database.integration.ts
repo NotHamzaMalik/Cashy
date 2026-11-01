@@ -46,6 +46,11 @@ test('Supabase creates a shared workspace for an authenticated identity', async 
     assert.equal(family.name, 'Test workspace');
     assert.equal(family.role, 'manager');
     assert.equal((await getFamilyStatus(userId))?.id, family.id);
+    assert.deepEqual(await readWorkspace(userId), { revision: 1, store: emptyStore() });
+    const shared = emptyStore();
+    shared.accounts.push({ id: 'shared-a', name: 'Shared wallet', owner: 'me', opening: 0, kind: 'Cash', currency: 'PKR', color: 'green' });
+    assert.equal(await writeWorkspace(userId, 1, shared), 2);
+    assert.equal((await readWorkspace(userId)).store.accounts[0]?.name, 'Shared wallet');
   } finally {
     const memberships = await admin`delete from cashy.memberships where user_id = ${userId} returning household_id`;
     if (memberships.length) await admin`delete from cashy.households where id = ${memberships[0].household_id}`;
