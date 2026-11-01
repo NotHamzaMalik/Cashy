@@ -18,7 +18,7 @@ const schema = z.object({
   familyMembers: z.array(z.object({ id, name: label, relationship: label, color: label })).max(100).default([]),
   remittances: z.array(z.object({ id, sender: label, recipient: label, sentAmount: minor.positive(), sentCurrency: currency, receivedAmount: minor.positive(), receivedCurrency: currency, fee: minor, date, status: z.enum(['sent', 'received']), note })).max(5000).default([]),
   allowances: z.array(z.object({ id, memberId: id, amount: minor.positive(), currency, month: z.string().regex(/^\d{4}-\d{2}$/), status: z.enum(['planned', 'paid']), note })).max(5000).default([]),
-  loans: z.array(z.object({ id, borrower: label, principal: minor.positive(), repaid: minor, currency, date, due: date, note })).max(5000).default([])
+  loans: z.array(z.object({ id, borrower: label, principal: minor.positive(), repaid: minor, currency, date, due: date, note, direction: z.enum(['given', 'taken']).default('given') })).max(5000).default([])
 });
 export function parseStore(raw: unknown): Store {
   const data = schema.parse(raw) as Store;

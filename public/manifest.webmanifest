@@ -1,5 +1,5 @@
 {
-  "name": "Kash", "short_name": "Kash", "description": "Family money, understood together",
+  "name": "Kash", "short_name": "Kash", "description": "Money, made clear",
   "start_url": "/", "display": "standalone", "background_color": "#211a18", "theme_color": "#211a18",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

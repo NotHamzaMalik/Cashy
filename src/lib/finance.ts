@@ -25,7 +25,7 @@ export type Allowance = {
 };
 export type Loan = {
   id: string; borrower: string; principal: number; repaid: number; currency: Currency;
-  date: string; due: string; note: string;
+  date: string; due: string; note: string; direction: 'given' | 'taken';
 };
 export type Store = {
   version: 1; accounts: Account[]; transactions: Transaction[]; budgets: Budget[];
@@ -37,7 +37,7 @@ export const CURRENCIES: Currency[] = ['PKR', 'ZAR', 'USD', 'USDT'];
 export const CURRENCY_LABELS: Record<Currency, string> = {
   PKR: 'Pakistani rupee', ZAR: 'South African rand', USD: 'US dollar', USDT: 'Tether'
 };
-export const CATEGORIES = ['Groceries', 'Bills & utilities', 'Fuel & transport', 'Pocket money', 'Education', 'Medical', 'Rent & home', 'Family support', 'Dining', 'Salary', 'Other'];
+export const CATEGORIES = ['Groceries', 'Bills & utilities', 'Fuel & transport', 'Pocket money', 'Education', 'Medical', 'Rent & home', 'Support', 'Dining', 'Salary', 'Other'];
 export const DEMO_DATE = '2026-10-13';
 
 export function parseMoney(value: string): number {

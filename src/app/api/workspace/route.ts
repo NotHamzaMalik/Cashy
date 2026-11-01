@@ -31,7 +31,7 @@ export async function PUT(request: Request) {
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (!Number.isInteger(body.revision) || body.revision < 0 || body.revision >= 2147483647) throw new Error('Invalid revision');
     revision = body.revision; store = parseStore(body.store);
-    if (store.accounts.some(a => a.owner !== 'me') || store.transactions.some(t => t.owner !== 'me')) throw new Error('Shared records require family permissions');
+    if (store.accounts.some(a => a.owner !== 'me') || store.transactions.some(t => t.owner !== 'me')) throw new Error('Shared records require workspace permissions');
   } catch { return reply({ error: 'Invalid personal workspace.' }, 400); }
   try {
     const next = await writeWorkspace(userId, revision, store);

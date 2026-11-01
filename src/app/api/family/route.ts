@@ -8,14 +8,14 @@ const reply = (data: unknown, status = 200) => Response.json(data, { status, hea
 
 export async function GET() {
   const { userId } = await auth();
-  if (!userId) return reply({ error: 'Sign in to open your family.' }, 401);
+  if (!userId) return reply({ error: 'Sign in to open your workspace.' }, 401);
   try { return reply({ family: await getFamilyStatus(userId) }); }
-  catch { return reply({ error: 'Family setup is unavailable.' }, 503); }
+  catch { return reply({ error: 'Workspace setup is unavailable.' }, 503); }
 }
 export async function POST(request: Request) {
   if (request.headers.get('origin') !== new URL(request.url).origin) return reply({ error: 'Invalid request origin.' }, 403);
   const { userId } = await auth();
-  if (!userId) return reply({ error: 'Sign in to set up your family.' }, 401);
+  if (!userId) return reply({ error: 'Sign in to set up your workspace.' }, 401);
   try {
     if (!request.headers.get('content-type')?.startsWith('application/json')) return reply({ error: 'JSON required.' }, 415);
     const text = await request.text();
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     if (!['dad', 'manager'].includes(role) || !displayName || displayName.length > 100) return reply({ error: 'Check your name and role.' }, 400);
     if (action === 'create') {
       const name = String(body.name || '').trim();
-      if (!name || name.length > 100) return reply({ error: 'Add a family name.' }, 400);
+      if (!name || name.length > 100) return reply({ error: 'Add a workspace name.' }, 400);
       return reply({ family: await createFamily(userId, name, role, displayName) });
     }
     if (action === 'join') {
@@ -35,9 +35,9 @@ export async function POST(request: Request) {
       if (!/^[A-F0-9]{8}$/.test(code)) return reply({ error: 'Enter the 8-character invite code.' }, 400);
       return reply({ family: await joinFamily(userId, code, role, displayName) });
     }
-    return reply({ error: 'Unknown family action.' }, 400);
+    return reply({ error: 'Unknown workspace action.' }, 400);
   } catch (error) {
-    const message = error instanceof Error && /invalid invite/i.test(error.message) ? 'That invite code was not found.' : 'Family setup could not be completed.';
+    const message = error instanceof Error && /invalid invite/i.test(error.message) ? 'That invite code was not found.' : 'Workspace setup could not be completed.';
     return reply({ error: message }, 400);
   }
 }

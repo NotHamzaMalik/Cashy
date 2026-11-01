@@ -64,7 +64,7 @@ export class WorkspaceSync {
   }
   async edit(next: Store, expected: Store) {
     const valid = parseStore(next);
-    if (valid.accounts.some(a => a.owner !== 'me') || valid.transactions.some(t => t.owner !== 'me')) throw new Error('This is a personal workspace. Shared records need family permissions.');
+    if (valid.accounts.some(a => a.owner !== 'me') || valid.transactions.some(t => t.owner !== 'me')) throw new Error('Shared records need workspace permissions.');
     const copy = await this.local.update(current => {
       const merged = mergeStores(expected, valid, current.local);
       if (merged.conflicts.length) throw new Error('These records changed in another tab. Your form is still open; review the latest values before saving again.');
