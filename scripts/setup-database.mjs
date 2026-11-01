@@ -10,6 +10,7 @@ const sql = postgres(process.env.CASHY_MIGRATION_DATABASE_URL, {
 try {
   await sql.unsafe(await readFile('supabase/migrations/202610230001_workspaces.sql', 'utf8'));
   await sql.unsafe(await readFile('supabase/migrations/202610300001_households.sql', 'utf8'));
+  await sql.unsafe(await readFile('supabase/migrations/202611010001_fix_invite_generation.sql', 'utf8'));
   if (!process.env.DATABASE_URL) {
     const password = randomBytes(32).toString('hex');
     // Generated hex is safe in this DDL literal. No supplied text is interpolated.

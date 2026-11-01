@@ -9,3 +9,6 @@ test-results/
 playwright-report/
 public/pdf.worker.min.mjs
 .openai/
+
+.vercel
+.env*

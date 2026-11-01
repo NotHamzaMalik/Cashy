@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import postgres from 'postgres';
-import { readWorkspace, writeWorkspace } from '../src/lib/database';
+import { createFamily, getFamilyStatus, readWorkspace, writeWorkspace } from '../src/lib/database';
 import { emptyStore } from '../src/lib/storage';
 
 test('Supabase revision writes and database ownership policy', async () => {
@@ -34,5 +34,21 @@ test('Supabase revision writes and database ownership policy', async () => {
   } finally {
     await admin`delete from cashy.workspaces where user_id in (${a}, ${b}, ${a + '_forbidden'})`;
     await runtime.end({ timeout: 1 }); await admin.end({ timeout: 1 });
+  }
+});
+
+test('Supabase creates a shared workspace for an authenticated identity', async () => {
+  const userId = 'cashy_family_test_' + randomUUID();
+  const options = { ssl: { rejectUnauthorized: true, ca: readFileSync('certs/supabase-ca.crt', 'utf8') }, max: 1, prepare: false };
+  const admin = postgres(process.env.CASHY_MIGRATION_DATABASE_URL!, options);
+  try {
+    const family = await createFamily(userId, 'Test workspace', 'manager', 'Test user');
+    assert.equal(family.name, 'Test workspace');
+    assert.equal(family.role, 'manager');
+    assert.equal((await getFamilyStatus(userId))?.id, family.id);
+  } finally {
+    const memberships = await admin`delete from cashy.memberships where user_id = ${userId} returning household_id`;
+    if (memberships.length) await admin`delete from cashy.households where id = ${memberships[0].household_id}`;
+    await admin.end({ timeout: 1 });
   }
 });
