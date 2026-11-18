@@ -12,12 +12,12 @@ export function useWorkspaceSync(userId: string) {
   const repository = useRef<BrowserWorkspace | null>(null);
   useEffect(() => {
     let active = true;
-    const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cashy:' + userId) : null;
+    const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('vega:' + userId) : null;
     const local = new BrowserWorkspace(userId, () => channel?.postMessage('changed'));
     repository.current = local;
     const sync = new WorkspaceSync(local, workspaceRemote, () => navigator.onLine,
       next => { if (active) setView(next); },
-      work => navigator.locks ? navigator.locks.request('cashy-sync:' + userId, work) : work());
+      work => navigator.locks ? navigator.locks.request('vega-sync:' + userId, work) : work());
     controller.current = sync;
     const reconnect = () => sync.schedule();
     const refresh = () => { void sync.refresh().catch(() => { if (active) setError('Device storage could not be read.'); }); };

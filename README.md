@@ -1,6 +1,6 @@
-# Kash
+# Vega
 
-Kash is a private family-money web app for families managing income and spending across countries.
+Vega is a private money-management web app for households managing income and spending across countries.
 
 ## Main flow
 
@@ -40,4 +40,4 @@ npm run build
 
 Financial records are authenticated server-side, validated before storage, isolated by database policies and cached locally for offline editing. Secrets belong only in local or deployment environment variables—never in Git.
 
-Cashiro interface reference and AGPL attribution remain documented in [NOTICE.md](NOTICE.md). Kash’s components are independently implemented for this web app.
+Cashiro interface reference and AGPL attribution remain documented in [NOTICE.md](NOTICE.md). Vega’s components are independently implemented for this web app.

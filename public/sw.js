@@ -1,11 +1,11 @@
-const CACHE = 'cashy-shell-v2';
+const CACHE = 'vega-shell-v3';
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(['/offline.html', '/icon.svg']);
     try {
       const shell = await fetch('/', { cache: 'reload' });
-      if (!shell.ok || shell.redirected || shell.headers.get('X-Cashy-Public-Shell') !== '1') return;
+      if (!shell.ok || shell.redirected || shell.headers.get('X-Vega-Public-Shell') !== '1') return;
       const html = await shell.clone().text();
       await cache.put('/', shell);
       const assets = [...new Set([...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"?]+(?:\?[^" ]*)?)"/g)].map(match => match[1]))];
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
   })());
   self.skipWaiting();
 });
-self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('cashy-shell-') && key !== CACHE).map(key => caches.delete(key))))); self.clients.claim(); });
+self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => (key.startsWith('vega-shell-') || key.startsWith('cashy-shell-')) && key !== CACHE).map(key => caches.delete(key))))); self.clients.claim(); });
 // Cache only the public root shell (no financial data), static code and offline fallback.
 // Never cache API responses, PDFs, sign-in pages or authentication resources.
 self.addEventListener('fetch', event => {
@@ -22,7 +22,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin || event.request.method !== 'GET') return;
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).then(async response => {
-      if (url.pathname === '/' && response.ok && !response.redirected && response.headers.get('X-Cashy-Public-Shell') === '1') {
+      if (url.pathname === '/' && response.ok && !response.redirected && response.headers.get('X-Vega-Public-Shell') === '1') {
         const cache = await caches.open(CACHE);
         await cache.put('/', response.clone());
       }

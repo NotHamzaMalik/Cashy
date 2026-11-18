@@ -1,2 +1,2 @@
-import Cashy from '@/components/cashy';
-export default function Home() { return <Cashy />; }
+import Vega from '@/components/cashy';
+export default function Home() { return <Vega />; }

@@ -27,7 +27,7 @@ async function request(token, method = 'GET', body, extra = {}) {
 try {
   const tokens = [];
   for (let i = 0; i < 2; i++) {
-    await writeFile(`${files}/temporary-user.json`, JSON.stringify({ email_address: [`cashy-sync-${randomUUID()}+clerk_test@example.com`], skip_password_requirement: true, first_name: 'Cashy Sync Test' }));
+    await writeFile(`${files}/temporary-user.json`, JSON.stringify({ email_address: [`vega-sync-${randomUUID()}+clerk_test@example.com`], skip_password_requirement: true, first_name: 'Vega Sync Test' }));
     const user = api('/users', '--file test-results/temporary-user.json --yes');
     if (!/^user_[a-zA-Z0-9]+$/.test(user.id)) throw Error('Unexpected Clerk create response keys: ' + Object.keys(user).join(','));
     users.push(user.id);
@@ -77,7 +77,7 @@ try {
     await page.getByText('Offline groceries', { exact: true }).waitFor();
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.screenshot({ path: 'test-results/offline-reload-debug.png', fullPage: true });
-    console.log('Offline reload:', await page.evaluate(() => ({ online: navigator.onLine, remembered: Boolean(localStorage.getItem('cashy-offline-user')), controlled: Boolean(navigator.serviceWorker.controller), clerkLoaded: Boolean(window.Clerk?.loaded), text: document.body.innerText.slice(0, 300) })));
+    console.log('Offline reload:', await page.evaluate(() => ({ online: navigator.onLine, remembered: Boolean(localStorage.getItem('vega-offline-user')), controlled: Boolean(navigator.serviceWorker.controller), clerkLoaded: Boolean(window.Clerk?.loaded), text: document.body.innerText.slice(0, 300) })));
     await Promise.race([
       page.getByRole('button', { name: 'Open device workspace', exact: true }).waitFor(),
       page.getByText('Offline groceries', { exact: true }).waitFor()

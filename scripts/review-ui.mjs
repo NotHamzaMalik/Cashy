@@ -6,7 +6,7 @@ const root = process.cwd();
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try {
  const page=await browser.newPage({viewport:{width:1440,height:1000}});
- await page.route('http://cashy-preview.test/**', async route => {
+ await page.route('http://vega-preview.test/**', async route => {
   const pathname = new URL(route.request().url()).pathname;
   const relative = pathname === '/' ? '.next/server/app/index.html' : pathname.startsWith('/_next/static/') ? '.next/static/' + pathname.slice('/_next/static/'.length) : 'public/' + pathname.slice(1);
   const file = path.resolve(root, relative);
@@ -15,8 +15,8 @@ try {
   try { await route.fulfill({body:await readFile(file),contentType:types[path.extname(file)] || 'application/octet-stream'}); }
   catch { await route.fulfill({status:404,body:''}); }
  });
- await page.addInitScript(() => localStorage.setItem('cashy-theme','light'));
- await page.goto('http://cashy-preview.test/',{waitUntil:'domcontentloaded',timeout:45000});
+ await page.addInitScript(() => localStorage.setItem('vega-theme','light'));
+ await page.goto('http://vega-preview.test/',{waitUntil:'domcontentloaded',timeout:45000});
  await page.getByRole('heading',{name:'Overview',exact:true}).waitFor({timeout:30000});
  await page.getByRole('button',{name:'Switch to dark theme'}).waitFor();
  await page.evaluate(() => document.fonts.ready);
