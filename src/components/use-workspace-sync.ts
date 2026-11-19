@@ -5,19 +5,20 @@ import { BrowserWorkspace } from '@/lib/workspace-cache';
 import { WorkspaceSync, type SyncView } from '@/lib/sync';
 import { workspaceRemote } from '@/lib/workspace-remote';
 
-export function useWorkspaceSync(userId: string) {
+export function useWorkspaceSync(userId: string, scope?: string, deviceOnly = false) {
   const [view, setView] = useState<SyncView>();
   const [error, setError] = useState('');
   const controller = useRef<WorkspaceSync | null>(null);
   const repository = useRef<BrowserWorkspace | null>(null);
   useEffect(() => {
     let active = true;
-    const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('vega:' + userId) : null;
-    const local = new BrowserWorkspace(userId, () => channel?.postMessage('changed'));
+    const key = scope === 'personal' ? userId + ':personal' : userId;
+    const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('vega:' + key) : null;
+    const local = new BrowserWorkspace(key, () => channel?.postMessage('changed'));
     repository.current = local;
-    const sync = new WorkspaceSync(local, workspaceRemote, () => navigator.onLine,
+    const sync = new WorkspaceSync(local, workspaceRemote(scope), () => !deviceOnly && navigator.onLine,
       next => { if (active) setView(next); },
-      work => navigator.locks ? navigator.locks.request('vega-sync:' + userId, work) : work());
+      work => navigator.locks ? navigator.locks.request('vega-sync:' + key, work) : work());
     controller.current = sync;
     const reconnect = () => sync.schedule();
     const refresh = () => { void sync.refresh().catch(() => { if (active) setError('Device storage could not be read.'); }); };
@@ -34,7 +35,7 @@ export function useWorkspaceSync(userId: string) {
       window.removeEventListener('focus', reconnect); document.removeEventListener('visibilitychange', visible);
       if (controller.current === sync) controller.current = null;
     };
-  }, [userId]);
+  }, [userId, scope, deviceOnly]);
   const edit = useCallback(async (next: Store, expected: Store) => {
     if (!controller.current) throw new Error('Workspace is still opening.');
     await controller.current.edit(next, expected);

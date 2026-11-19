@@ -1,16 +1,24 @@
 import { auth } from '@clerk/nextjs/server';
-import { readWorkspace, writeWorkspace } from '@/lib/database';
+import { readWorkspace, writeWorkspace, WorkspaceAccessError } from '@/lib/database';
 import { parseStore } from '@/lib/storage';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'private, no-store' };
 const reply = (data: unknown, status = 200) => Response.json(data, { status, headers });
-export async function GET() {
+function workspaceScope(request: Request) {
+  return new URL(request.url).searchParams.get('workspace') ?? undefined;
+}
+function storageError(error: unknown) {
+  return error instanceof WorkspaceAccessError
+    ? reply({ error: 'You no longer have access to this workspace.' }, 403)
+    : reply({ error: 'Cloud storage is unavailable. Your local changes are safe.' }, 503);
+}
+export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return reply({ error: 'Sign in to sync your workspace.' }, 401);
-  try { return reply(await readWorkspace(userId)); }
-  catch { return reply({ error: 'Cloud storage is unavailable. Your local changes are safe.' }, 503); }
+  try { return reply(await readWorkspace(userId, workspaceScope(request))); }
+  catch (error) { return storageError(error); }
 }
 export async function PUT(request: Request) {
   if (request.headers.get('origin') !== new URL(request.url).origin) return reply({ error: 'Invalid request origin.' }, 403);
@@ -34,7 +42,7 @@ export async function PUT(request: Request) {
     if (store.accounts.some(a => a.owner !== 'me') || store.transactions.some(t => t.owner !== 'me')) throw new Error('Shared records require workspace permissions');
   } catch { return reply({ error: 'Invalid personal workspace.' }, 400); }
   try {
-    const next = await writeWorkspace(userId, revision, store);
+    const next = await writeWorkspace(userId, revision, store, workspaceScope(request));
     return next === null ? reply({ error: 'Workspace changed on another device.' }, 409) : reply({ revision: next });
-  } catch { return reply({ error: 'Cloud storage is unavailable. Your local changes are safe.' }, 503); }
+  } catch (error) { return storageError(error); }
 }

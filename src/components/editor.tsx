@@ -5,11 +5,11 @@ import { CATEGORIES, CURRENCIES, CURRENCY_LABELS, parseMoney, validDate, validat
 import { Modal } from './ui';
 
 export type EditorKind = 'transaction' | 'account' | 'budget' | 'goal' | 'remittance' | 'allowance' | 'loan' | 'member';
-type Props = { kind: EditorKind; store: Store; editId?: string; onSave: (store: Store, expected: Store) => Promise<boolean>; onClose: () => void };
+type Props = { kind: EditorKind; initialType?: 'expense' | 'income' | 'transfer'; store: Store; editId?: string; onSave: (store: Store, expected: Store) => Promise<boolean>; onClose: () => void };
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
 const amountValue = (value?: number) => value === undefined ? '' : (value / 100).toFixed(2);
 
-export function Editor({ kind, store: currentStore, editId, onSave, onClose }: Props) {
+export function Editor({ kind, initialType = 'expense', store: currentStore, editId, onSave, onClose }: Props) {
   const [store] = useState(currentStore);
   const transaction = store.transactions.find(x => x.id === editId);
   const loan = store.loans.find(x => x.id === editId);
@@ -17,7 +17,7 @@ export function Editor({ kind, store: currentStore, editId, onSave, onClose }: P
   const remittance = store.remittances.find(x => x.id === editId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [type, setType] = useState<Transaction['type']>(transaction?.type || 'expense');
+  const [type, setType] = useState<Transaction['type']>(transaction?.type || initialType);
   const [currency, setCurrency] = useState<Currency>(transaction?.currency || loan?.currency || allowance?.currency || remittance?.sentCurrency || 'PKR');
   const titles: Record<EditorKind, string> = {
     transaction: transaction ? 'Edit money record' : 'Record money', account: 'Add an account',

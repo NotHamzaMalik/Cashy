@@ -29,8 +29,7 @@ export async function getFamilyStatus(userId: string): Promise<FamilyStatus | nu
 export async function createFamily(userId: string, name: string, role: FamilyRole, displayName: string): Promise<FamilyStatus> {
   return database().begin(async sql => {
     await identify(sql, userId);
-    const personal = await sql`select data from cashy.workspaces where user_id = ${userId}`;
-    const initial = personal.length ? parseStore(personal[0].data) : emptyStore();
+    const initial = emptyStore();
     const rows = await sql`select cashy.create_family(${name}, ${role}, ${displayName}, ${sql.json(initial)}) as status`;
     return rows[0].status;
   }) as Promise<FamilyStatus>;
@@ -42,22 +41,32 @@ export async function joinFamily(userId: string, code: string, role: FamilyRole,
     return rows[0].status;
   }) as Promise<FamilyStatus>;
 }
-export async function readWorkspace(userId: string): Promise<CloudWorkspace> {
+export class WorkspaceAccessError extends Error {}
+
+export async function readWorkspace(userId: string, scope?: string): Promise<CloudWorkspace> {
   return database().begin(async sql => {
     await identify(sql, userId);
-    const family = await sql`select * from cashy.read_family_workspace()`;
-    if (family.length) return { revision: family[0].revision, store: parseStore(family[0].data) };
+    if (scope !== 'personal') {
+      const rows = await sql`select * from cashy.read_family_workspace()
+        where ${scope ?? null}::text is null or cashy.family_status()->>'id' = ${scope ?? null}`;
+      if (rows.length) return { revision: rows[0].revision, store: parseStore(rows[0].data) };
+      if (scope) throw new WorkspaceAccessError();
+    }
     const personal = await sql`select revision, data from cashy.workspaces where user_id = ${userId}`;
     return personal.length ? { revision: personal[0].revision, store: parseStore(personal[0].data) } : { revision: 0, store: emptyStore() };
   }) as Promise<CloudWorkspace>;
 }
-export async function writeWorkspace(userId: string, expectedRevision: number, store: Store): Promise<number | null> {
+export async function writeWorkspace(userId: string, expectedRevision: number, store: Store, scope?: string): Promise<number | null> {
   return database().begin(async sql => {
     await identify(sql, userId);
-    const status = await sql`select cashy.family_status() as status`;
-    if (status[0]?.status) {
-      const rows = await sql`select cashy.write_family_workspace(${expectedRevision}, ${sql.json(store)}) as revision`;
-      return rows[0]?.revision ?? null;
+    if (scope !== 'personal') {
+      const [family] = await sql`select cashy.family_status()->>'id' as id`;
+      if (scope && family?.id !== scope) throw new WorkspaceAccessError();
+      if (family?.id) {
+        const rows = await sql`select cashy.write_family_workspace(${expectedRevision}, ${sql.json(store)}) as revision
+          where cashy.family_status()->>'id' = ${family.id}`;
+        return rows[0]?.revision ?? null;
+      }
     }
     const rows = expectedRevision === 0
       ? await sql`insert into cashy.workspaces (user_id, revision, data) values (${userId}, 1, ${sql.json(store)}) on conflict (user_id) do nothing returning revision`
