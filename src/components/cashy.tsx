@@ -92,6 +92,10 @@ function Workspace({ userId, family, onSwitch, onSetup }: { userId: string; fami
   const sync = useWorkspaceSync(userId, scope, deviceOnly); const store = sync.view?.copy.local ?? emptyStore();
   const [page, setPage] = useState('home'); const [currency, setCurrency] = useState<Currency>(family.role === 'dad' ? 'ZAR' : 'PKR');
   const [period, setPeriod] = useState<Period>('month'); const [anchor, setAnchor] = useState(today);
+  const [customHome, setCustomHome] = useState(false);
+  const [rangeStart, setRangeStart] = useState(() => today().slice(0, 7) + '-01');
+  const [rangeEnd, setRangeEnd] = useState(today);
+
   const [light, setLight] = useState(true); const [mobileMenu, setMobileMenu] = useState(false);
   const [recordType, setRecordType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [editor, setEditor] = useState<EditorKind | null>(null); const [editId, setEditId] = useState<string>();
@@ -127,10 +131,25 @@ function Workspace({ userId, family, onSwitch, onSetup }: { userId: string; fami
   }
   function go(id: string) { setPage(id); setMobileMenu(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   function copyInvite() { navigator.clipboard.writeText(family.inviteCode).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }); }
-  const monthReceived = monthRows.filter(t => t.type === 'income' && t.currency === 'PKR');
-  const received = monthReceived.reduce((total, t) => total + t.amount, 0) +
-    store.remittances.filter(r => r.status === 'received' && r.receivedCurrency === 'PKR' && r.date.slice(0, 7) === anchor.slice(0, 7) &&
-      !monthReceived.some(t => t.id === r.id)).reduce((total, r) => total + r.receivedAmount, 0);
+  const custom = page === 'home' && customHome;
+  const reportStart = custom ? rangeStart : period === 'year' ? anchor.slice(0, 4) + '-01-01' : period === 'month' ? anchor.slice(0, 7) + '-01' : anchor;
+  const monthEnd = new Date(Date.UTC(Number(anchor.slice(0, 4)), Number(anchor.slice(5, 7)), 0)).getUTCDate();
+  const reportEnd = custom ? rangeEnd : period === 'year' ? anchor.slice(0, 4) + '-12-31' : period === 'month' ? anchor.slice(0, 7) + '-' + monthEnd : anchor;
+  const homeRows = store.transactions.filter(t => t.currency === currency && t.date >= reportStart && t.date <= reportEnd);
+  const homeSummary = summarize(homeRows, currency);
+  const ledgerIncomeIds = new Set(homeRows.filter(t => t.type === 'income').map(t => t.id));
+  const extraReceipts = store.remittances.filter(r => r.status === 'received' && r.receivedCurrency === currency &&
+    r.date >= reportStart && r.date <= reportEnd && !ledgerIncomeIds.has(r.id));
+  const received = homeSummary.income + extraReceipts.reduce((sum, r) => sum + r.receivedAmount, 0);
+  const activity = [
+    ...homeRows.map(row => ({ row, kind: 'transaction' as const })),
+    ...extraReceipts.map(r => ({
+      row: { id: r.id, owner: 'me', date: r.date, merchant: r.sender, amount: r.receivedAmount, currency: r.receivedCurrency,
+        type: 'income' as const, category: 'Other', accountId: '', note: r.note },
+      kind: 'remittance' as const
+    }))
+  ].sort((a, b) => b.row.date.localeCompare(a.row.date)).slice(0, 5);
+  const homeRangeLabel = custom ? reportStart + ' ? ' + reportEnd : rangeLabel;
   const action: Partial<Record<string, { kind: EditorKind; label: string }>> = { dad: { kind: 'remittance', label: 'Record transfer' }, household: { kind: 'transaction', label: 'Add expense' }, allowances: { kind: 'allowance', label: 'Plan pocket money' }, loans: { kind: 'loan', label: 'Add loan' }, savings: { kind: 'goal', label: 'Add savings goal' }, records: { kind: 'transaction', label: 'Record money' } };
   const topAction = action[page];
   function statCard(label: string, value: string, detail: string, tone = '') { return <section className={`metric-card ${tone}`}><span>{label}</span><strong>{value}</strong><small>{detail}</small></section>; }
@@ -142,9 +161,16 @@ function Workspace({ userId, family, onSwitch, onSetup }: { userId: string; fami
     {mobileMenu && <button className="menu-backdrop" aria-label="Close menu" onClick={() => setMobileMenu(false)} />}
     <div className="main-shell"><header className="topbar"><button className="mobile-menu" onClick={() => setMobileMenu(true)} aria-label="Open menu"><Menu /></button><div className="breadcrumb"><span>Vega</span><ChevronRight size={14} /><strong>{page === 'settings' ? 'Settings' : NAV.find(x => x.id === page)?.label}</strong></div><div className="top-actions"><button className="icon-button" onClick={() => setLight(!light)} aria-label="Change appearance">{light ? <Moon /> : <Sun />}</button><AuthControls /></div></header>
     <main><div className="page-heading"><div><span className="eyebrow">{family.role === 'dad' ? 'INCOME & TRANSFERS' : 'WORKSPACE OVERVIEW'}</span><h1>{page === 'home' ? `Hello, ${family.displayName}.` : page === 'settings' ? 'Settings' : NAV.find(x => x.id === page)?.label}</h1><p>{SUBTITLES[page]}</p></div>{['home', 'dad', 'household', 'records'].includes(page) ? <button className="button primary main-add" onClick={() => setDialog('record')}><Plus size={18} /> Add record</button> : topAction && <button className="button primary main-add" onClick={() => open(topAction.kind)}><Plus size={18} /> {topAction.label}</button>}</div>
-    {page !== 'settings' && <div className="control-bar"><div className="segmented">{(['day', 'month', 'year'] as const).map(value => <button key={value} className={period === value ? 'active' : ''} onClick={() => setPeriod(value)}>{value === 'day' ? 'Day' : value === 'month' ? 'Month' : 'Year'}</button>)}</div><div className="date-control" role="group" aria-label="Report period">
+    {page !== 'settings' && <div className="control-bar"><div className="segmented">{(['day', 'month', 'year'] as const).map(value => <button key={value} className={!custom && period === value ? 'active' : ''} onClick={() => { setCustomHome(false); setPeriod(value); }}>{value === 'day' ? 'Day' : value === 'month' ? 'Month' : 'Year'}</button>)}{page === 'home' && <button className={custom ? 'active' : ''} onClick={() => setCustomHome(true)}>Custom range</button>}</div><div className="date-control" role="group" aria-label="Report period">
       <CalendarDays size={16} aria-hidden="true" />
-      {period === 'day' ? <input type="date" aria-label="Report date" value={anchor} onChange={e => {
+      {custom ? <>
+        <label>From <input type="date" value={rangeStart} max={rangeEnd} onChange={e => {
+          if (validDate(e.target.value) && e.target.value <= rangeEnd) setRangeStart(e.target.value);
+        }} /></label>
+        <label>To <input type="date" value={rangeEnd} min={rangeStart} onChange={e => {
+          if (validDate(e.target.value) && e.target.value >= rangeStart) setRangeEnd(e.target.value);
+        }} /></label>
+      </> : period === 'day' ? <input type="date"  aria-label="Report date" value={anchor} onChange={e => {
         if (validDate(e.target.value)) setAnchor(e.target.value);
       }} /> : <>
         {period === 'month' && <select aria-label="Report month" value={anchor.slice(5, 7)} onChange={e => setAnchor(anchor.slice(0, 4) + '-' + e.target.value + '-01')}>
@@ -161,15 +187,35 @@ function Workspace({ userId, family, onSwitch, onSetup }: { userId: string; fami
     <SyncStatusPanel view={sync.view} retry={sync.retry} resolve={sync.resolve} />
     {page === 'home' && <>
       <div className="metrics-grid three">
-        {statCard(personal ? 'Money received' : 'Family money received', money(received), 'This month · PKR', 'green')}
-        {statCard(personal ? 'Local spending' : 'Household spending', money(householdSpent), 'This month · PKR', 'orange')}
-        {statCard('Money left this month', money(received - householdSpent), 'Received minus spending · PKR', 'blue')}
+        {statCard('Total spent', money(homeSummary.expenses, currency), 'All accounts ? ' + homeRangeLabel, 'orange')}
+        {statCard('Money received', money(received, currency), homeRangeLabel, 'green')}
+        {statCard('Money left for the period', money(received - homeSummary.expenses, currency), 'Received minus spent', 'blue')}
       </div>
       <section className="card"><div className="section-heading"><h3>Recent activity</h3><button className="text-button" onClick={() => go('records')}>View records <ArrowRight size={15} /></button></div>
-        {[...rows].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map(t => <TransactionRow key={t.id} transaction={t} onClick={() => open('transaction', t.id)} />)}
-        {!rows.length && <Empty title="No activity in this period" text="Add a record to track money coming in or going out." />}
+        {activity.map(({ row, kind }) => <TransactionRow key={kind + row.id} transaction={row} onClick={() => open(kind, row.id)} />)}
+        {!activity.length && <Empty title="No activity in this period" text="Add a record to track money coming in or going out." />}
       </section>
-    <div className="section-heading outside"><div><h3>Accounts</h3><p>Separate balances in their original currencies</p></div><button className="text-button" onClick={() => open('account')}><Plus size={16} /> Add account</button></div><div className="accounts-grid">{accounts.map(accountCard)}{!accounts.length && <button className="add-tile" onClick={() => open('account')}><Plus /><strong>Add a {currency} account</strong><small>Cash, bank, savings or USDT wallet</small></button>}</div></>}
+      <details className="card home-accounts">
+        <summary>Recorded balances by account</summary>
+        <p className="muted">Balances reflect the records in Vega. Transfers and cash withdrawals move money between accounts.</p>
+        <div className="accounts-grid">
+          {accounts.map(account => {
+            const opening = balance(account, store.transactions.filter(t => t.date < reportStart));
+            const moneyIn = homeRows.filter(t => t.type === 'income' && t.accountId === account.id || t.type === 'transfer' && t.toAccountId === account.id).reduce((sum, t) => sum + t.amount, 0);
+            const moneyOut = homeRows.filter(t => t.type !== 'income' && t.accountId === account.id).reduce((sum, t) => sum + t.amount, 0);
+            return <section className="account-tile" key={account.id}>
+              <h3>{account.name}</h3>
+              <dl><div><dt>Opening balance</dt><dd>{money(opening, currency)}</dd></div>
+                <div><dt>Money in</dt><dd>{money(moneyIn, currency)}</dd></div>
+                <div><dt>Money out</dt><dd>{money(moneyOut, currency)}</dd></div>
+                <div><dt>Closing balance</dt><dd>{money(opening + moneyIn - moneyOut, currency)}</dd></div>
+              </dl>
+            </section>;
+          })}
+        </div>
+        <button className="button secondary" onClick={() => open('account')}><Plus size={16} /> Add account</button>
+      </details>
+    </>}
     {page === 'dad' && <><div className="metrics-grid three">{statCard('Salary & income', money(rows.filter(t => t.type === 'income' && t.category === 'Salary').reduce((n, t) => n + t.amount, 0), currency), rangeLabel, 'green')}{statCard('Overseas spending', money(rows.filter(t => t.type === 'expense' && t.location === 'south-africa').reduce((n, t) => n + t.amount, 0), currency), 'Personal and living expenses', 'orange')}{statCard('Balance remaining', money(totalBalance, currency), 'Across selected-currency accounts', 'blue')}</div><section className="card remittance-section"><div className="section-heading"><div><span className="eyebrow">INCOME TRANSFERS</span><h2>Money received</h2><p>Simply record the date and amount received.</p></div></div><div className="remittance-list">{incomeInPeriod.sort((a, b) => b.date.localeCompare(a.date)).map(t => <TransactionRow key={t.id} transaction={t} onClick={() => open('transaction', t.id)} />)}
     {remittancesInPeriod.map(r => <button key={r.id} className="remittance-row" onClick={() => open('remittance', r.id)}><span className={`status-orb ${r.status}`}><Send /></span><div><strong>Money received</strong><small>{r.date}{r.note ? ` · ${r.note}` : ''}</small></div><div><strong>{money(r.receivedAmount, r.receivedCurrency)}</strong></div></button>)}{!remittancesInPeriod.length && !incomeInPeriod.length && <Empty title="No transfers recorded" text="Add the date and amount when money is received." />}</div></section><div className="section-heading outside"><h3>Recent income & spending</h3></div><section className="card">{overseasInPeriod.slice(0, 8).map(t => <TransactionRow key={t.id} transaction={t} onClick={() => open('transaction', t.id)} />)}{!overseasInPeriod.length && <Empty title="No overseas records" text="Add income, rent, food or other spending." />}</section></>}
     {page === 'household' && <><div className="metrics-grid three">{statCard('Available at home', money(store.accounts.filter(a => a.currency === 'PKR').reduce((n, a) => n + balance(a, store.transactions), 0), 'PKR'), 'Current PKR account balances', 'green')}{statCard('Spent this month', money(householdSpent, 'PKR'), `${monthRows.filter(t => t.type === 'expense' && t.currency === 'PKR').length} expenses`, 'orange')}{statCard('Plan remaining', money(Math.max(0, householdPlanned - householdSpent), 'PKR'), `of ${money(householdPlanned, 'PKR')} allocated`, 'blue')}</div><div className="section-heading outside"><div><h3>Household plan</h3><p>Big, clear limits for regular household spending.</p></div><button className="button secondary" onClick={() => open('budget')}><Plus size={16} /> Add category plan</button></div><div className="plans-grid">{store.budgets.filter(b => b.currency === 'PKR').map(budgetCard)}{!store.budgets.some(b => b.currency === 'PKR') && <button className="add-tile" onClick={() => open('budget')}><Plus /><strong>Plan groceries, bills and fuel</strong><small>See spent and remaining at a glance</small></button>}</div><div className="dashboard-grid"><SpendingChart rows={monthRows} currency="PKR" period="month" anchor={anchor} /><CategoryBreakdown rows={monthRows} currency="PKR" /></div></>}
